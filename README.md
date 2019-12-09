@@ -2,8 +2,9 @@
 Uma Api simples para baixar imagens do DuckDuckGo. 
 
 Essa API foi originalmente criada por [Deepan Prabhu Babu](https://github.com/deepanprabhu). 
-A qual eu fiz um porte para __python 3.7.5__ e adicionei novas funcionalidades como: apenas
-pesquisar as imagens e retornar uma lista de urls e baixar as imagens em multi-threading.
+A qual eu fiz um porte para __python 3.7.5__ e adicionei novas funcionalidades como: 
+- apenas pesquisar as imagens e retornar a lista de urls. 
+- baixar as imagens em multi-threading.
    
 
 ## Instalação
