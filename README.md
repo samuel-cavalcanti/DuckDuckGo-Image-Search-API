@@ -40,11 +40,17 @@ link para download do código [test_api.py](exemples/test_api.py)
 
 #### Observações
 
-- parâmetro keywords : é a palavra ou as palavras chave da busca no [duckduckgo](https://duckduckgo.com/)
+- parâmetro __keywords__ : é a palavra ou as palavras chave da busca no [duckduckgo](https://duckduckgo.com/)
 
-- parâmetro max_workers : é o número de Threads utilizadas para o download das imagens
+- parâmetro __max_workers__ : é o número de Threads utilizadas para o download das imagens
 
-- parâmetro output_dir : é a pasta onde será salva as imagens. Por padrão é criada uma pasta chamada __downloads__
+- parâmetro __output_dir__ : é a pasta onde será salva as imagens. Por padrão é criada uma pasta chamada __downloads__
+
+- parâmetro __max_results__:  limita o número de imagens a serem pesquisadas.  
+
+- __Informações importantes__: testes iniciais mostraram que o limite máximo de urls fica por volta dos 950 urls de
+imagens por pesquisa.  
+
 
 # Agradecimentos
 
