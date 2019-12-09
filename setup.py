@@ -3,8 +3,8 @@ import setuptools
 
 setuptools.setup(
     name="duckduckgo_images_api",
-    version="0.0.0",
-    url="https://github.com/deepanprabhu/duckduckgo-images-api",
+    version="0.0.1",
+    url="https://github.com/samuel-cavalcanti/DuckDuckGo-Image-Search-API.git",
     author="Deepan Prabhu Babu and Samuel Cavalcanti",
     description="Download DuckDuckGo Image Search Resuts - Scraped using Python 3.7.5",
     long_description=open('README.md').read(),
@@ -18,7 +18,7 @@ setuptools.setup(
     setup_requires=['pytest-runner', ],
     tests_require=['pytest', 'flake8>=3.3.0', 'tox>=2.7.0', 'vcrpy>=1.11.1'],
     extras_require={
-        'packaging': ['setuptools>=42.0.1', 'twine>=1.11.0', ],
+        'packaging': ['setuptools>=42'],
     },
     classifiers=[
         'Development Status :: 2 - Alpha',
