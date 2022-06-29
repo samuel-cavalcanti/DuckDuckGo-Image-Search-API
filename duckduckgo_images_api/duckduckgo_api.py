@@ -3,6 +3,7 @@ import re
 import json
 import time
 import os
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -18,7 +19,7 @@ class DuckDuckGoApi:
         'referer': 'https://duckduckgo.com/',
         'authority': 'duckduckgo.com',
     }
-    __output_dir = "downloads"
+    __output_dir: Path
 
     def __init__(self, debug=False):
         self.__debug = debug
@@ -70,11 +71,11 @@ class DuckDuckGoApi:
 
         images = list()
 
-        print("searching images")
+        search_bar = ProgressBar("searching images")
 
         while len(images) <= max_results:
 
-            print("searching {} %".format(round(len(images) / max_results * 100, 3)))
+            search_bar.print(current=len(images), total=max_results)
 
             data = self.__try_to_request(requests_url, self.__headers, params)
 
@@ -88,29 +89,34 @@ class DuckDuckGoApi:
                 if self.__debug:
                     print("No Next Page - Exiting")
 
-                print("total images : {}".format(len(images)))
-
                 break
 
             requests_url = self.__url + data["next"]
 
-        return images[:max_results]
+        
+        desired_images = images[:max_results] if len(images) > max_results else images
+
+        search_bar.print(current=len(desired_images), total=max_results)
+        print('\n')
+        print(f"total images : {len(desired_images)}")
+       
+
+        return desired_images
 
     def search_and_download(self, keywords: str, output_dir="downloads", max_results=1, max_workers=1):
         url_and_titles = self.search(keywords, max_results)
 
-        self.__output_dir = output_dir
+        self.__output_dir = Path(output_dir)
 
-        self.__make_output_dir()
-
-        print("Downloading images")
+        self.__output_dir.mkdir(exist_ok=True)
 
         self.__download_images(max_workers, url_and_titles)
 
     def __try_to_request(self, requests_url: str, headers: dict, params: tuple):
         while True:
             try:
-                res = requests.get(requests_url, headers=headers, params=params)
+                res = requests.get(
+                    requests_url, headers=headers, params=params)
 
                 return json.loads(res.text)
             except ValueError as e:
@@ -122,41 +128,47 @@ class DuckDuckGoApi:
     def __fetch_url(self, json_data: dict):
         url: str = json_data["image"]
 
-        title_without_special_chars = "".join(char for char in json_data["title"] if char.isalnum())
+        title_without_special_chars = "".join(
+            char for char in json_data["title"] if char.isalnum())
 
-        type_image = url.split(".")[-1].lower()  # .png ,.jpg ...
+        type_image = url.split(".")[-1][:3].lower()  # .png ,.jpg ...
 
-        file_path = os.path.join(self.__output_dir, "{}.{}".format(title_without_special_chars, type_image))
+        file_path = Path(f'{title_without_special_chars}.{type_image}')
+
+        output_path = self.__output_dir.joinpath(file_path)
 
         try:
             result = requests.get(url, stream=True)
 
             if result.status_code == 200:
-                open(file_path, "wb").write(result.content)
+                output_path.write_bytes(result.content)
+
         except:
 
             print("Request error !\nurl {}".format(url))
 
     def __download_images(self, workers: int, url_and_titles: list):
 
+        download_progress_bar = ProgressBar(message='Downloading images')
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            fetchs = 0
-
+            number_of_downloads = 0
+            total_downloads = len(url_and_titles)
             for _ in executor.map(self.__fetch_url, url_and_titles):
-                print("downloading {}%".format(round(fetchs / len(url_and_titles) * 100, 3)))
-                fetchs += 1
 
-            print("downloading {}%".format(round(fetchs / len(url_and_titles) * 100, 3)))
+                download_progress_bar.print(
+                    current=number_of_downloads, total=total_downloads)
 
-    def __make_output_dir(self):
-        if not os.path.isdir(self.__output_dir):
-            os.mkdir(self.__output_dir)
+                number_of_downloads += 1
+
+            download_progress_bar.print(
+                current=number_of_downloads, total=total_downloads)
 
     @staticmethod
     def print_json(json_object: dict):
 
         print("__________")
-        print("Width {}, Height {}".format(json_object["width"], json_object["height"]))
+        print("Width {}, Height {}".format(
+            json_object["width"], json_object["height"]))
         print("Thumbnail {}".format(json_object["thumbnail"]))
         print("Url {}".format(json_object["url"]))
         print("Title {}".format(json_object["title"].encode('utf-8')))
@@ -166,3 +178,20 @@ class DuckDuckGoApi:
     def __print_jsons(self, jsons: list):
         for json_obj in jsons:
             self.print_json(json_obj)
+
+
+class ProgressBar:
+    __message: str
+
+    def __init__(self, message: str) -> None:
+        self.__message = message
+
+    def print(self, current: int, total: int):
+        percentage = current/total * 100
+        if current == total:
+            output_message = f"{self.__message} completed\n"
+        else:
+            # \r means that output message is always printed at same line
+            output_message = f"{self.__message} {round(percentage,3)}%\r"
+
+        print(output_message, end='')
