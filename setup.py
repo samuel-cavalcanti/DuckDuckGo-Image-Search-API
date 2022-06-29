@@ -1,5 +1,6 @@
 """setup."""
 import setuptools
+from pathlib import Path
 
 setuptools.setup(
     name="duckduckgo_images_api",
@@ -7,7 +8,7 @@ setuptools.setup(
     url="https://github.com/samuel-cavalcanti/DuckDuckGo-Image-Search-API.git",
     author="Deepan Prabhu Babu and Samuel Cavalcanti",
     description="Download DuckDuckGo Image Search Resuts - Scraped using Python 3.7.5",
-    long_description=open('README.md').read(),
+    long_description=Path('README.md').read_text(),
     long_description_content_type="text/markdown",
     keywords="duckduckgo image api",
     license="MIT",
