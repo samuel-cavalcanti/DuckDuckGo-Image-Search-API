@@ -4,7 +4,7 @@ from duckduckgo_images_api.duckduckgo_api import DuckDuckGoApi
 def test_api():
     duck_duck_go = DuckDuckGoApi(debug=False)
 
-    images = duck_duck_go.search("arroz", 100)
+    images = duck_duck_go.search(keywords="arroz", max_results=100)
 
     duck_duck_go.print_json(images[0])
 
