@@ -38,6 +38,15 @@ if __name__ == '__main__':
 ```
 link para download do código [test_api.py](exemples/test_api.py)
 
+### Testes
+
+foi criado um suite de teste de integração, para executa-lo:
+```bash
+python -m unittest discover  -v -s tests    
+```
+Lembrando que necessita de acesso de internet para baixar e procurar imagens no duckduckgo.
+
+
 #### Observações
 
 - parâmetro __keywords__ : é a palavra ou as palavras chave da busca no [duckduckgo](https://duckduckgo.com/)
