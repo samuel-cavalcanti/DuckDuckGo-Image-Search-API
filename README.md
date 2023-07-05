@@ -2,7 +2,7 @@
 Uma Api simples para baixar imagens do DuckDuckGo. 
 
 Essa API foi originalmente criada por [Deepan Prabhu Babu](https://github.com/deepanprabhu). 
-A qual eu fiz um porte para __python 3.7.5__ e adicionei novas funcionalidades como: 
+A qual eu fiz um porte para __python 3.11__ e adicionei novas funcionalidades como: 
 - apenas pesquisar as imagens e retornar a lista de urls. 
 - baixar as imagens em multi-threading.
    
@@ -12,8 +12,8 @@ A qual eu fiz um porte para __python 3.7.5__ e adicionei novas funcionalidades c
 ```bash
 git clone https://github.com/samuel-cavalcanti/DuckDuckGo-Image-Search-API.git
 cd DuckDuckGo-Image-Search-API
-python setup.py install # python3.7.5
-pip install . # Dependendo da situação vai precisar de sudo
+python setup.py install # python3.11
+pip install . # Dependendo da situação vai precisar de sudo (mas por favor evite e aprenda sobre python venv)
 ```
 
 ## Código exemplo

@@ -2,9 +2,10 @@ import requests
 import re
 import json
 import time
-import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+import logging
+from tqdm import tqdm
 
 
 class DuckDuckGoApi:
@@ -20,22 +21,24 @@ class DuckDuckGoApi:
         'authority': 'duckduckgo.com',
     }
     __output_dir: Path
+    debug: bool
 
     def __init__(self, debug=False):
-        self.__debug = debug
+        if debug:
+            self.debug = debug
+            logging.basicConfig(level=logging.INFO)
 
     def __get_token(self, keywords: str):
 
         search_obj = self.__first_search(keywords)
 
         if not search_obj:
-            print("Token Parsing Failed !")
+            logging.info("Token Parsing Failed !")
             self.__del__()
 
         self.__token = search_obj.group(1)
 
-        if self.__debug:
-            print("Obtained Token {}".format(self.__token))
+        logging.info("Obtained Token {}".format(self.__token))
 
     def __del__(self):
         pass
@@ -55,8 +58,7 @@ class DuckDuckGoApi:
 
         self.__get_token(keywords)
 
-        if self.__debug:
-            print("Hitting DuckDuckGo for Token")
+        logging.info("Hitting DuckDuckGo for Token")
 
         params = (
             ('l', 'wt-wt'),
@@ -71,35 +73,35 @@ class DuckDuckGoApi:
 
         images = list()
 
-        search_bar = ProgressBar("searching images")
+        message = "searching images"
 
-        while len(images) <= max_results:
+        with tqdm(total=max_results) as progress_bar:
+            progress_bar.set_description(message)
 
-            search_bar.print(current=len(images), total=max_results)
+            while len(images) <= max_results:
 
-            data = self.__try_to_request(requests_url, self.__headers, params)
+                progress_bar.update(len(images))
 
-            if self.__debug:
-                print("Hitting Url Success : %s", requests_url)
+                data = self.__try_to_request(
+                    requests_url, self.__headers, params)
+
+                logging.info("Hitting Url Success : %s", requests_url)
                 self.__print_jsons(data["results"])
 
-            images += data["results"]
+                images += data["results"]
 
-            if "next" not in data:
-                if self.__debug:
-                    print("No Next Page - Exiting")
+                if "next" not in data:
+                    logging.info("No Next Page - Exiting")
+                    break
 
-                break
+                requests_url = self.__url + data["next"]
 
-            requests_url = self.__url + data["next"]
-
-        
-        desired_images = images[:max_results] if len(images) > max_results else images
-
-        search_bar.print(current=len(desired_images), total=max_results)
-        print('\n')
-        print(f"total images : {len(desired_images)}")
-       
+            if len(images) > max_results:
+                desired_images = images[:max_results]
+            else:
+                desired_images = images
+            progress_bar.set_description(
+                f"total images : {len(desired_images)}")
 
         return desired_images
 
@@ -112,18 +114,23 @@ class DuckDuckGoApi:
 
         self.__download_images(max_workers, url_and_titles)
 
-    def __try_to_request(self, requests_url: str, headers: dict, params: tuple):
-        while True:
-            try:
-                res = requests.get(
-                    requests_url, headers=headers, params=params)
+    def __try_to_request(self, requests_url: str, headers: dict, params: tuple) -> dict:
 
+        number_of_tries = 5
+        seconds = 1
+
+        for i in range(number_of_tries):
+
+            res = requests.get(requests_url, headers=headers, params=params)
+            try:
                 return json.loads(res.text)
-            except ValueError as e:
-                if self.__debug:
-                    print("Hitting Url Failure - Sleep and Retry: %s", requests_url)
-                time.sleep(5)
-                continue
+            except ValueError:
+                logging.error(
+                    f"{i}-{number_of_tries} Hitting Url Failure - Sleeping for {seconds} second(s) and Retry: {requests_url}\n")
+                time.sleep(1)
+
+        raise DuckDuckGoApiExeception(
+            f"Unable to hit: {requests_url}, API is temporary down")
 
     def __fetch_url(self, json_data: dict):
         url: str = json_data["image"]
@@ -149,49 +156,38 @@ class DuckDuckGoApi:
 
     def __download_images(self, workers: int, url_and_titles: list):
 
-        download_progress_bar = ProgressBar(message='Downloading images')
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            number_of_downloads = 0
-            total_downloads = len(url_and_titles)
-            for _ in executor.map(self.__fetch_url, url_and_titles):
+        message = 'Downloading images'
 
-                download_progress_bar.print(
-                    current=number_of_downloads, total=total_downloads)
+        total_downloads = len(url_and_titles)
+        with tqdm(total=total_downloads) as progress_bar:
+            progress_bar.set_description(message)
 
-                number_of_downloads += 1
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                number_of_downloads = 0
+                for _ in executor.map(self.__fetch_url, url_and_titles):
 
-            download_progress_bar.print(
-                current=number_of_downloads, total=total_downloads)
+                    progress_bar.update(number_of_downloads)
+
+                    number_of_downloads += 1
+
+                progress_bar.update(number_of_downloads)
 
     @staticmethod
     def print_json(json_object: dict):
 
-        print("__________")
-        print("Width {}, Height {}".format(
+        logging.info("__________")
+        logging.info("Width {}, Height {}".format(
             json_object["width"], json_object["height"]))
-        print("Thumbnail {}".format(json_object["thumbnail"]))
-        print("Url {}".format(json_object["url"]))
-        print("Title {}".format(json_object["title"].encode('utf-8')))
-        print("Image {}".format(json_object["image"]))
-        print("__________")
+        logging.info("Thumbnail {}".format(json_object["thumbnail"]))
+        logging.info("Url {}".format(json_object["url"]))
+        logging.info("Title {}".format(json_object["title"].encode('utf-8')))
+        logging.info("Image {}".format(json_object["image"]))
+        logging.info("__________")
 
     def __print_jsons(self, jsons: list):
         for json_obj in jsons:
             self.print_json(json_obj)
 
 
-class ProgressBar:
-    __message: str
-
-    def __init__(self, message: str) -> None:
-        self.__message = message
-
-    def print(self, current: int, total: int):
-        percentage = current/total * 100
-        if current == total:
-            output_message = f"{self.__message} completed\n"
-        else:
-            # \r means that output message is always printed at same line
-            output_message = f"{self.__message} {round(percentage,3)}%\r"
-
-        print(output_message, end='')
+class DuckDuckGoApiExeception(Exception):
+    pass

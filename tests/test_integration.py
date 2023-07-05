@@ -16,7 +16,7 @@ class DuckDuckGoApiIntegrationSuiteCase(unittest.TestCase):
 
     def test_search_and_download_rice_images(self):
 
-        api = DuckDuckGoApi()
+        api = DuckDuckGoApi(debug=True)
 
         output = "downloads_test"
         max_results = 20
